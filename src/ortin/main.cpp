@@ -21,6 +21,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include <fstream>
+
 // C++ includes.
 #include <algorithm>
 #include <locale>
@@ -107,6 +109,18 @@ static void print_help(const TCHAR *argv0)
 		"  The following additional characters can be provided as modifiers:\n"
 		"  - I: Use interlaced output.\n"
 		"  - A: Do not use the correct aspect ratio.\n"
+		"\n"
+		"dump_isne_fw\n"
+		"- Dumps the firmware of the IS Nitro Emulator to fw_isne_dump.bin\n"
+		"\n"
+		"dump_ds_ipl_fw\n"
+		"- Dumps the firmware of the DS IPL to fw_ds_ipl_dump.bin\n"
+		"  To be used together with dsbf_dump, by selecting \"To Emulated GBA ROM\".\n"
+		"  Download: https://github.com/Lorenzooone/dsbf_dump/releases/tag/0.0.0\n"
+		"  Example:\n"
+		"    bin/ortin load dsbf_dump.nds\n"
+		"    (Select on the ISNE side \"To Emulated GBA ROM\")\n"
+		"    bin/ortin dump_ds_ipl_fw\n"
 		"\n"
 		"sloton N\n"
 		"- Enables slot 1 (DS) or 2 (GBA).\n"
@@ -282,6 +296,31 @@ int ORTIN_CDECL _tmain(int argc, TCHAR *argv[])
 				ret = EXIT_FAILURE;
 			}
 		}
+	} else if (!_tcscmp(argv[optind], _T("dump_isne_fw"))) {
+		static uint8_t buffer[0xE0000];
+		ret = nitro->readNECMemory(0x210000, buffer, 0xE0000);
+		if(ret)
+			fprintf(stderr, "Read failure");
+		else {
+			std::ofstream fs("fw_isne_dump.bin", std::ios::out | std::ios::binary);
+		    fs.write((const char*)buffer, 0xE0000);
+		    fs.close();
+		}
+	} else if (!_tcscmp(argv[optind], _T("dump_ds_ipl_fw"))) {
+		static uint8_t buffer[0x40000];
+		ret = nitro->readNECMemory(0x0F800000, buffer, 0x40000);
+		if(ret)
+			fprintf(stderr, "Read failure");
+		else {
+			std::ofstream fs("fw_ds_ipl_dump.bin", std::ios::out | std::ios::binary);
+		    fs.write((const char*)buffer, 0x40000);
+		    fs.close();
+		}
+		buffer[0] = 0x7E;
+		buffer[1] = 0;
+		ret = nitro->writeNECMemory(0x0F841000, buffer, 2);
+		if(ret)
+			fprintf(stderr, "Write failure");
 	} else if (!_tcscmp(argv[optind], _T("slotoff"))) {
 		// Turn on a slot.
 		if (argc < optind+2) {

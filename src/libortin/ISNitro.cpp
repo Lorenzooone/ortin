@@ -407,6 +407,42 @@ int ISNitro::waitForDebuggerROM(void)
 	return LIBUSB_ERROR_TIMEOUT;
 }
 
+#define READ_NEC_LIMIT 0x2000
+/**
+ * Read the NEC CPU's memory.
+ *
+ * @param address Destination address.
+ * @param data Data.
+ * @param len Length of data.
+ * @return 0 on success; libusb error code on error.
+ */
+// Adapted from MIT Code: https://github.com/Lorenzooone/cc3dsfs/blob/f1e305c303800ed16a5e794332f4af29cdc7aa22/source/CaptureDeviceSpecific/ISDevices/usb_is_device_communications.cpp#L775
+// Which itself is from Gericom's documentation + MIT code
+int ISNitro::readNECMemory(uint32_t address, uint8_t *data, uint32_t len)
+{
+	// Payload must be a multiple of 2 bytes.
+	assert(len % 2 == 0);
+	for(uint32_t i = 0; i < (len + READ_NEC_LIMIT - 1) / READ_NEC_LIMIT; i++) {
+		int inner_len = len - (READ_NEC_LIMIT * i);
+		if(inner_len > READ_NEC_LIMIT)
+			inner_len = READ_NEC_LIMIT;
+		const uint32_t cdblen = sizeof(NitroNECCommand);
+		unique_ptr<uint8_t[]> cdb(new uint8_t[cdblen]);
+		NitroNECCommand *const pNecCmd = reinterpret_cast<NitroNECCommand*>(cdb.get());
+		pNecCmd->cmd = 0x27;
+		pNecCmd->unitSize = 2;
+		pNecCmd->length = cpu_to_le16(inner_len / 2);
+		pNecCmd->address = cpu_to_le32(address + (i * READ_NEC_LIMIT));
+		int ret = sendWriteCommand(0x27, 0, 0, cdb.get(), cdblen);
+		if(ret)
+			return ret;
+		ret = sendReadCommand(0x17, 0, 0, data + (i * READ_NEC_LIMIT), inner_len);
+		if(ret)
+			return ret;
+	}
+	return 0;
+}
+
 /**
  * Write to the NEC CPU's memory.
  *

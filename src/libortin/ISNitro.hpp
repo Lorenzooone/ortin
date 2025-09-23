@@ -124,6 +124,16 @@ class ISNitro
 		int waitForDebuggerROM(void);
 
 		/**
+		 * Read the NEC CPU's memory.
+		 *
+		 * @param address Destination address.
+		 * @param data Data.
+		 * @param len Length of data.
+		 * @return 0 on success; libusb error code on error.
+		 */
+		int readNECMemory(uint32_t address, uint8_t *data, uint32_t len);
+
+		/**
 		 * Write to the NEC CPU's memory.
 		 *
 		 * @param address Destination address.
