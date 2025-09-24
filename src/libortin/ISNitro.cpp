@@ -346,6 +346,11 @@ int ISNitro::installDebuggerROM(bool toFirmware)
 	ret = writeEmulationMemory(2, 0, isid, sizeof(isid));
 	if (ret < 0)
 		return ret;
+	isid[0] = 0x7E;
+	isid[1] = 0;
+	ret = writeNECMemory(0x0F841000, isid, 2);
+	if(ret < 0)
+		return ret;
 
 	// Overwrite the debugging pointers in the ROM header.
 	const uint32_t debug_ptrs[4] = {
