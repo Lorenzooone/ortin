@@ -20,5 +20,6 @@ class ISNitro;
  * @return 0 on success; non-zero on error.
  */
 int load_nds_rom(ISNitro *nitro, const TCHAR *filename);
+int enc_nds_rom(const TCHAR *filename, const TCHAR *out_filename);
 
 #endif /* __ORTIN_ORTIN_LOAD_ROM_HPP__ */

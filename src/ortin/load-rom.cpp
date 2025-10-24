@@ -115,3 +115,34 @@ int load_nds_rom(ISNitro *nitro, const TCHAR *filename)
 	nitro->continueProcessor(1);
 	return 0;
 }
+
+int enc_nds_rom(const TCHAR *filename, const TCHAR *out_filename)
+{
+	errno = 0;
+	FILE *f = _tfopen(filename, "rb");
+	if (!f) {
+		int err = errno;
+		if (err == 0)
+			err = EIO;
+		fprintf(stderr, "*** ERROR opening '%s': %s\n", filename, strerror(err));
+		return err;
+	}
+
+	fseeko(f, 0, SEEK_END);
+	off64_t fileSize = ftello(f);
+	rewind(f);
+	if (fileSize > 256*1024*1024) {
+		fprintf(stderr, "*** ERROR: ROM image '%s' is larger than 256 MB.\n", filename);
+		fclose(f);
+		return ENOMEM;
+	}
+
+	uint8_t *const rom = static_cast<uint8_t*>(malloc(fileSize));
+	size_t size = fread(rom, 1, fileSize, f);
+	fclose(f);
+	ndscrypt_encrypt_secure_area(rom, size);
+	f = _tfopen(out_filename, "wb");
+	fwrite(rom, 1, fileSize, f);
+	fclose(f);
+	return 0;
+}

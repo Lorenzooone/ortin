@@ -99,6 +99,9 @@ static void print_help(const TCHAR *argv0)
 		"- Load a Nintendo DS ROM image. If the image has a decrypted secure area,\n"
 		"  it will be re-encrypted on load.\n"
 		"\n"
+		"modcrypt in_filename.nds out_filename.nds\n"
+		"- Encrypts the secure area of a Nintendo DS ROM image.\n"
+		"\n"
 		"avmode av1 av2 [--bgcolor=COLOR] [--deflicker=DEFLICKER]\n"
 		"- Set the AV mode settings. av1/av2 can be one of the following\n"
 		"  primary mode characters:\n"
@@ -242,7 +245,7 @@ int ORTIN_CDECL _tmain(int argc, TCHAR *argv[])
 	}
 
 	ISNitro *nitro = new ISNitro();
-	if (!nitro->isOpen()) {
+	if ((!nitro->isOpen()) && _tcscmp(argv[optind], _T("modcrypt"))) {
 		fprintf(stderr, "*** ERROR: Unable to open the IS-NITRO unit.\n");
 		libusb_exit(nullptr);
 		return EXIT_FAILURE;
@@ -273,6 +276,19 @@ int ORTIN_CDECL _tmain(int argc, TCHAR *argv[])
 			ret = EXIT_FAILURE;
 		} else {
 			ret = load_nds_rom(nitro, argv[optind+1]);
+		}
+	} else if (!_tcscmp(argv[optind], _T("modcrypt"))) {
+		// Load a ROM image.
+		if (argc < optind+2) {
+			print_error(argv[0], _T("Nintendo DS ROM image not specified"));
+			ret = EXIT_FAILURE;
+		}
+		else if (argc < optind+3) {
+			print_error(argv[0], _T("Nintendo DS output ROM image not specified"));
+			ret = EXIT_FAILURE;
+		}
+		else {
+			ret = enc_nds_rom(argv[optind+1], argv[optind+2]);
 		}
 	} else if (!_tcscmp(argv[optind], _T("avmode"))) {
 		// Set the AV mode.
