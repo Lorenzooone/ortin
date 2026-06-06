@@ -34,8 +34,7 @@
 #include "ISNitro.hpp"
 
 // Commands
-#include "load-rom.hpp"
-#include "avmode.hpp"
+#include "loadable_cli_command.hpp"
 
 #include "tcharx.h"
 #ifdef _MSC_VER
@@ -43,105 +42,6 @@
 #else
 # define ORTIN_CDECL
 #endif
-
-// FIXME: gcc doesn't support printf attributes for wide strings.
-#if defined(__GNUC__) && !defined(_WIN32)
-# define ATTR_PRINTF(fmt, args) __attribute__ ((format (printf, (fmt), (args))))
-#else
-# define ATTR_PRINTF(fmt, args)
-#endif
-
-/**
- * Print an error message.
- * @param argv0 Program name.
- * @param fmt Format string.
- * @param ... Arguments.
- */
-static void ATTR_PRINTF(2, 3) print_error(const TCHAR *argv0, const TCHAR *fmt, ...)
-{
-	if (fmt != NULL) {
-		va_list ap;
-		va_start(ap, fmt);
-		_ftprintf(stderr, _T("%s: "), argv0);
-		_vftprintf(stderr, fmt, ap);
-		va_end(ap);
-
-		fputc('\n', stderr);
-	}
-
-	_ftprintf(stderr, _T("Try `%s` --help` for more information.\n"), argv0);
-}
-
-/**
- * Print program help.
- * @param argv0 Program name.
- */
-static void print_help(const TCHAR *argv0)
-{
-	fputs("This program is licensed under the GNU GPL v2.\n"
-		"For more information, visit: http://www.gnu.org/licenses/\n"
-		"\n", stdout);
-
-	fputs("Syntax: ", stdout);
-	_fputts(argv0, stdout);
-	fputs(" [options] [command]\n"
-		"\n"
-		"Supported commands:\n"
-		"\n"
-		"fullreset\n"
-		"- Do a full reset. This clears the first 32 KB of EMULATOR memory, disables\n"
-		"  both slots, and resets the system.\n"
-		"\n"
-		"reset\n"
-		"- Do a soft reset. This resets the DS CPU only.\n"
-		"\n"
-		"load filename.nds\n"
-		"- Load a Nintendo DS ROM image. If the image has a decrypted secure area,\n"
-		"  it will be re-encrypted on load.\n"
-		"\n"
-		"modcrypt in_filename.nds out_filename.nds\n"
-		"- Encrypts the secure area of a Nintendo DS ROM image.\n"
-		"\n"
-		"avmode av1 av2 [--bgcolor=COLOR] [--deflicker=DEFLICKER]\n"
-		"- Set the AV mode settings. av1/av2 can be one of the following\n"
-		"  primary mode characters:\n"
-		"  - N: No image. Disables the output entirely.\n"
-		"  - U: Upper screen image.\n"
-		"  - L: Lower screen image.\n"
-		"  - B: Both screen images, stacked on top of each other.\n"
-		"  The following additional characters can be provided as modifiers:\n"
-		"  - I: Use interlaced output.\n"
-		"  - A: Do not use the correct aspect ratio.\n"
-		"\n"
-		"dump_isne_fw\n"
-		"- Dumps the firmware of the IS Nitro Emulator to fw_isne_dump.bin\n"
-		"\n"
-		"dump_ds_ipl_fw\n"
-		"- Dumps the firmware of the DS IPL to fw_ds_ipl_dump.bin\n"
-		"  To be used together with dsbf_dump, by selecting \"To Emulated GBA ROM\".\n"
-		"  Download: https://github.com/Lorenzooone/dsbf_dump/releases/tag/0.0.0\n"
-		"  Example:\n"
-		"    bin/ortin load dsbf_dump.nds\n"
-		"    (Select on the ISNE side \"To Emulated GBA ROM\")\n"
-		"    bin/ortin dump_ds_ipl_fw\n"
-		"\n"
-		"sloton N\n"
-		"- Enables slot 1 (DS) or 2 (GBA).\n"
-		"\n"
-		"slotoff N\n"
-		"- Powers off slot 1 (DS) or 2 (GBA).\n"
-		"\n"
-		"help\n"
-		"- Display this help and exit.\n"
-		"\n"
-		"Options:\n"
-		"\n"
-		"  -b, --bgcolor=COLOR       Specify a custom background color. (24-bit hex)\n"
-		"                            Example: FF8000 - default is black (000000)\n"
-		"  -d, --deflicker=DEFLICKER Deflicker mode: none, normal, alternate.\n"
-		"                            Default is none.\n"
-		, stdout);
-}
 
 int ORTIN_CDECL _tmain(int argc, TCHAR *argv[])
 {
@@ -160,83 +60,13 @@ int ORTIN_CDECL _tmain(int argc, TCHAR *argv[])
 #endif
 	putchar('\n');
 
-	// avmode options.
-	uint32_t bg_color = 0;
-	NitroAVDeflicker_e deflicker = NITRO_AV_DEFLICKER_DISABLED;
+	const loadable_cli_command_t* found_cli_cmd = get_cli_command_t_for_command(argc, argv);
 
-	// TODO: Allow customization once we figure out how to get
-	// rotation set up properly.
-	NitroAVRotation_e rotation = NITRO_AV_ROTATION_NONE;
-
-	while (true) {
-		static const struct option long_options[] = {
-			{_T("bgcolor"),		required_argument,	0, _T('b')},
-			{_T("deflicker"),	required_argument,	0, _T('d')},
-			{_T("help"),		no_argument,		0, _T('h')},
-
-			{NULL, 0, 0, 0}
-		};
-
-		int c = getopt_long(argc, argv, _T("b:d:h"), long_options, NULL);
-		if (c == -1)
-			break;
-
-		switch (c) {
-			case _T('b'): {
-				// Background color.
-				if (!optarg || optarg[0] == '\0') {
-					// NULL?
-					print_error(argv[0], _T("no background color specified"));
-					return EXIT_FAILURE;
-				}
-
-				char *endptr = nullptr;
-				bg_color = strtoul(optarg, &endptr, 16);
-				if (*endptr != '\0') {
-					print_error(argv[0], _T("background color is invalid (should be 24-bit hex)"));
-					return EXIT_FAILURE;
-				}
-				break;
-			}
-
-			case _T('d'):
-				// Deflicker.
-				if (!optarg || optarg[0] == '\0') {
-					// NULL?
-					print_error(argv[0], _T("no deflicker mode specified"));
-					return EXIT_FAILURE;
-				}
-
-				if (_tcsicmp(optarg, _T("none"))) {
-					deflicker = NITRO_AV_DEFLICKER_DISABLED;
-				} else if (_tcsicmp(optarg, _T("normal"))) {
-					deflicker = NITRO_AV_DEFLICKER_NORMAL;
-				} else if (_tcsicmp(optarg, _T("alternate")) ||
-					   _tcsicmp(optarg, _T("alt")))
-				{
-					deflicker = NITRO_AV_DEFLICKER_ALTERNATE;
-				} else {
-					print_error(argv[0], _T("deflicker mode is invalid"));
-					return EXIT_FAILURE;
-				}
-				break;
-
-			case _T('h'):
-				print_help(argv[0]);
-				return EXIT_SUCCESS;
-
-			case _T('?'):
-			default:
-				print_error(argv[0], NULL);
-				return EXIT_FAILURE;
-		}
-	}
-
-	// First argument after getopt-parsed arguments is set in optind.
-	if (optind >= argc) {
-		print_error(argv[0], _T("no parameters specified"));
+	if(found_cli_cmd == NULL)
 		return EXIT_FAILURE;
-	}
+
+	if(!found_cli_cmd->requires_isne_connected)
+		return found_cli_cmd->fn(NULL, argc, argv);
 
 	int status = libusb_init(nullptr);
 	if (status < 0) {
@@ -245,118 +75,13 @@ int ORTIN_CDECL _tmain(int argc, TCHAR *argv[])
 	}
 
 	ISNitro *nitro = new ISNitro();
-	if ((!nitro->isOpen()) && _tcscmp(argv[optind], _T("modcrypt"))) {
+	if (!nitro->isOpen()) {
 		fprintf(stderr, "*** ERROR: Unable to open the IS-NITRO unit.\n");
 		libusb_exit(nullptr);
 		return EXIT_FAILURE;
 	}
 
-	// Check the specified command.
-	// TODO: Better help if the command parameters are invalid.
-	int ret = 0;
-	if (!_tcscmp(argv[optind], _T("help"))) {
-		// Display help.
-		print_help(argv[0]);
-		return EXIT_SUCCESS;
-	} else if (!_tcscmp(argv[optind], _T("fullreset"))) {
-		// Full Reset: Wipe the first 32 KB of EMULATOR memory and reset the system.
-		uint8_t *zerobytes = static_cast<uint8_t*>(calloc(1, 32768));
-		nitro->writeEmulationMemory(1, 0, zerobytes, 32768);
-		free(zerobytes);
-		ret = nitro->fullReset();
-	} else if (!_tcscmp(argv[optind], _T("reset"))) {
-		// Reset: Reset the DS CPU only.
-		nitro->ndsReset(true);
-		usleep(500000);
-		ret = nitro->ndsReset(false);
-	} else if (!_tcscmp(argv[optind], _T("load"))) {
-		// Load a ROM image.
-		if (argc < optind+2) {
-			print_error(argv[0], _T("Nintendo DS ROM image not specified"));
-			ret = EXIT_FAILURE;
-		} else {
-			ret = load_nds_rom(nitro, argv[optind+1]);
-		}
-	} else if (!_tcscmp(argv[optind], _T("modcrypt"))) {
-		// Load a ROM image.
-		if (argc < optind+2) {
-			print_error(argv[0], _T("Nintendo DS ROM image not specified"));
-			ret = EXIT_FAILURE;
-		}
-		else if (argc < optind+3) {
-			print_error(argv[0], _T("Nintendo DS output ROM image not specified"));
-			ret = EXIT_FAILURE;
-		}
-		else {
-			ret = enc_nds_rom(argv[optind+1], argv[optind+2]);
-		}
-	} else if (!_tcscmp(argv[optind], _T("avmode"))) {
-		// Set the AV mode.
-		if (argc < optind+3) {
-			print_error(argv[0], _T("AV mode parameters not specified"));
-			ret = EXIT_FAILURE;
-		} else {
-			ret = set_av_mode(nitro, argv[optind+1], argv[optind+2], bg_color, deflicker, rotation);
-		}
-	} else if (!_tcscmp(argv[optind], _T("sloton"))) {
-		// Turn on a slot.
-		if (argc < optind+2) {
-			print_error(argv[0], _T("Slot number not specified"));
-			ret = EXIT_FAILURE;
-		} else {
-			int _slot = strtol(argv[optind+1], nullptr, 10);
-			if (_slot == 1 || _slot == 2) {
-				ret = nitro->setSlotPower(_slot, true);
-			} else {
-				print_error(argv[0], _T("Slot number '%s' is not valid"), argv[optind+1]);
-				ret = EXIT_FAILURE;
-			}
-		}
-	} else if (!_tcscmp(argv[optind], _T("dump_isne_fw"))) {
-		static uint8_t buffer[0xE0000];
-		ret = nitro->readNECMemory(0x210000, buffer, 0xE0000);
-		if(ret)
-			fprintf(stderr, "Read failure");
-		else {
-			std::ofstream fs("fw_isne_dump.bin", std::ios::out | std::ios::binary);
-		    fs.write((const char*)buffer, 0xE0000);
-		    fs.close();
-		}
-	} else if (!_tcscmp(argv[optind], _T("dump_ds_ipl_fw"))) {
-		static uint8_t buffer[0x40000];
-		ret = nitro->readNECMemory(0x0F800000, buffer, 0x40000);
-		if(ret)
-			fprintf(stderr, "Read failure");
-		else {
-			std::ofstream fs("fw_ds_ipl_dump.bin", std::ios::out | std::ios::binary);
-		    fs.write((const char*)buffer, 0x40000);
-		    fs.close();
-		}
-		buffer[0] = 0x7E;
-		buffer[1] = 0;
-		ret = nitro->writeNECMemory(0x0F841000, buffer, 2);
-		if(ret)
-			fprintf(stderr, "Write failure");
-	} else if (!_tcscmp(argv[optind], _T("slotoff"))) {
-		// Turn on a slot.
-		if (argc < optind+2) {
-			print_error(argv[0], _T("Slot number not specified"));
-			ret = EXIT_FAILURE;
-		} else {
-			int _slot = strtol(argv[optind+1], nullptr, 10);
-			if (_slot == 1 || _slot == 2) {
-				ret = nitro->setSlotPower(_slot, false);
-			} else {
-				print_error(argv[0], _T("Slot number '%s' is not valid"), argv[optind+1]);
-				ret = EXIT_FAILURE;
-			}
-		}
-	} else {
-		// Not recognized.
-		// TODO: If it's a filename, try loading the ROM.
-		print_error(argv[0], _T("unrecognized command '%s'"), argv[optind]);
-		ret = EXIT_FAILURE;
-	}
+	int ret = found_cli_cmd->fn(nitro, argc, argv);
 
 	delete nitro;
 	libusb_exit(nullptr);

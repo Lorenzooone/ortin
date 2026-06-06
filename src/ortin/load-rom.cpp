@@ -131,11 +131,6 @@ int enc_nds_rom(const TCHAR *filename, const TCHAR *out_filename)
 	fseeko(f, 0, SEEK_END);
 	off64_t fileSize = ftello(f);
 	rewind(f);
-	if (fileSize > 256*1024*1024) {
-		fprintf(stderr, "*** ERROR: ROM image '%s' is larger than 256 MB.\n", filename);
-		fclose(f);
-		return ENOMEM;
-	}
 
 	uint8_t *const rom = static_cast<uint8_t*>(malloc(fileSize));
 	size_t size = fread(rom, 1, fileSize, f);

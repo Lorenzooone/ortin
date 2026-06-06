@@ -1,5 +1,9 @@
 *.nds
 *.sav
+*.dsi
+*.rom
+*.gba
+*.srl
 CMakeFiles/
 build/
 bin/

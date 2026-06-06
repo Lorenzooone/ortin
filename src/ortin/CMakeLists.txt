@@ -11,6 +11,8 @@ PROJECT(ortin LANGUAGES C CXX)
 # Sources.
 SET(ortin_SRCS
 	main.cpp
+	loadable_cli_command.cpp
+	actual_commands.cpp
 	load-rom.cpp
 	avmode.cpp
 	)
@@ -18,6 +20,8 @@ SET(ortin_SRCS
 SET(ortin_H
 	load-rom.hpp
 	avmode.hpp
+	loadable_cli_command.hpp
+	actual_commands.hpp
 	)
 
 #########################
