@@ -11,6 +11,7 @@
 
 #include <stdint.h>
 #include <libusb.h>
+#include <string>
 
 #include "nitro-usb-cmds.h"
 
@@ -69,6 +70,12 @@ class ISNitro
 		int sendWriteCommand(uint16_t cmd, uint8_t _slot, uint32_t address, const uint8_t *data, uint32_t len);
 
 	public:
+		/**
+		 * Reads the serial of the unit to the provided string.
+		 * @return 0 on success; libusb error code on error.
+		 */
+		int getSerial(std::string* out_str);
+
 		/**
 		 * Reset the entire IS-NITRO system.
 		 * @return 0 on success; libusb error code on error.

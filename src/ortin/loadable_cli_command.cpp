@@ -106,7 +106,7 @@ static const loadable_cli_command_t dump_isne_fw_cmd = {
 	.command = "dump_isne_fw",
 	.command_syntax = "dump_isne_fw [out_filename]",
 	.full_description =	"  Dumps the firmware of the IS Nitro Emulator to \"out_filename\".\n"
-						"  Default is fw_isne_dump.bin",
+						"  Default is fw_isne_dump_\'#SERIAL\'.bin",
 	.requires_isne_connected = true,
 	.num_required_params = 0,
 	.fn = do_dump_isne_fw_cmd,
@@ -116,7 +116,7 @@ static const loadable_cli_command_t dump_ds_ipl_fw_cmd = {
 	.command = "dump_ds_ipl_fw",
 	.command_syntax = "dump_ds_ipl_fw [out_filename]",
 	.full_description =	"  Dumps the firmware of the DS IPL to \"out_filename\".\n"
-						"  Default is fw_ds_ipl_dump.bin.\n"
+						"  Default is fw_ds_ipl_dump_\'#SERIAL\'.bin.\n"
 						"  To be used together with dsbf_dump, by selecting \"To Emulated GBA ROM\".\n"
 						"  Download: https://github.com/Lorenzooone/dsbf_dump/releases/tag/0.0.0\n"
 						"  Example:\n"
@@ -335,19 +335,33 @@ static int do_slot_on_off_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv
 }
 
 static int do_dump_isne_fw_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]) {
-	std::string out_filepath = "fw_isne_dump.bin";
+	std::string out_filepath;
 
 	if(argc >= (CLI_CMD_BASE_POS + 2))
 		out_filepath = std::string(argv[CLI_CMD_BASE_POS + 1]);
+	else {
+		std::string serial_str = "";
+		int ret = connected_isne->getSerial(&serial_str);
+		if(ret < 0)
+			return ret;
+		out_filepath = "fw_isne_dump_" + serial_str + ".bin";
+	}
 
 	return do_dump_isne_fw_out_cmd(connected_isne, out_filepath);
 }
 
 static int do_dump_ds_ipl_fw_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]) {
-	std::string out_filepath = "fw_ds_ipl_dump.bin";
+	std::string out_filepath;
 
 	if(argc >= (CLI_CMD_BASE_POS + 2))
 		out_filepath = std::string(argv[CLI_CMD_BASE_POS + 1]);
+	else {
+		std::string serial_str = "";
+		int ret = connected_isne->getSerial(&serial_str);
+		if(ret < 0)
+			return ret;
+		out_filepath = "fw_ds_ipl_dump_" + serial_str + ".bin";
+	}
 
 	return do_dump_ds_ipl_fw_out_cmd(connected_isne, out_filepath);
 }

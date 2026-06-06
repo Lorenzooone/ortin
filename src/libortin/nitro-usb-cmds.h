@@ -41,14 +41,17 @@ typedef enum {
  * Nitro USB commands: Commands.
  */
 typedef enum {
-	NITRO_CMD_EMULATOR_MEMORY	= 0x00,
-	NITRO_CMD_NEC_MEMORY		= 0x26,
-	NITRO_CMD_FULL_RESET		= 0x81,
-	NITRO_CMD_NDS_RESET		= 0x8A,
-	NITRO_CMD_SET_CPU		= 0x8B,	// Set current CPU for operations (0 == ARM9, 1 == ARM7)
-	NITRO_CMD_SET_FIQ_PIN		= 0xAA,	// Set FIQ pin state for the current CPU
-	NITRO_CMD_SLOT_POWER		= 0xAD,
-	NITRO_CMD_SET_BREAKPOINTS	= 0xBD,	// Set breakpoints
+	NITRO_CMD_EMULATOR_MEMORY					= 0x00,
+	NITRO_CMD_EMU_GET_SERIAL					= 0x13,
+	NITRO_CMD_NEC_MEMORY_READ					= 0x17,
+	NITRO_CMD_NEC_MEMORY_WRITE_NOINC			= 0x26,
+	NITRO_CMD_NEC_MEMORY_WRITE_READ_POS_NOINC	= 0x27,
+	NITRO_CMD_FULL_RESET						= 0x81,
+	NITRO_CMD_NDS_RESET							= 0x8A,
+	NITRO_CMD_SET_CPU							= 0x8B,	// Set current CPU for operations (0 == ARM9, 1 == ARM7)
+	NITRO_CMD_SET_FIQ_PIN						= 0xAA,	// Set FIQ pin state for the current CPU
+	NITRO_CMD_MULTI_AD							= 0xAD,
+	NITRO_CMD_SET_BREAKPOINTS					= 0xBD,	// Set breakpoints
 } NitroCommand_e;
 
 /**

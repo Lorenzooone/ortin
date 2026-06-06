@@ -27,6 +27,8 @@ using std::unique_ptr;
 // Debug ROM
 #include "bins/debugger_code.h"
 
+#define IS_DEVICE_REAL_SERIAL_NUMBER_SIZE 10
+
 /**
  * Initialize an IS-NITRO unit.
  * TODO: Enumerate IS-NITRO units and allow the user to select one.
@@ -201,6 +203,28 @@ int ISNitro::sendWriteCommand(uint16_t cmd, uint8_t _slot, uint32_t address, con
 }
 
 /**
+ * Reads the serial of the unit to the provided string.
+ * @return 0 on success; libusb error code on error.
+ */
+// Adapted from MIT Code: https://github.com/Lorenzooone/cc3dsfs/blob/f6c0fffe4a2c7213e12a38e1d1824d75f5a1a358/source/CaptureDeviceSpecific/ISDevices/usb_is_device_communications.cpp#L758
+// Which itself is from Gericom's documentation + MIT code
+int ISNitro::getSerial(std::string* out_str)
+{
+	uint8_t buffer[IS_DEVICE_REAL_SERIAL_NUMBER_SIZE + 1];
+	*out_str = "";
+
+	int ret = sendReadCommand(NITRO_CMD_EMU_GET_SERIAL, 0, 0, buffer, IS_DEVICE_REAL_SERIAL_NUMBER_SIZE);
+
+	if(ret < 0)
+		return ret;
+
+	buffer[IS_DEVICE_REAL_SERIAL_NUMBER_SIZE] = '\0';
+
+	*out_str = std::string((char*)buffer);
+	return ret;
+}
+
+/**
  * Reset the entire IS-NITRO system.
  * @return 0 on success; libusb error code on error.
  */
@@ -241,7 +265,7 @@ int ISNitro::setSlotPower(uint8_t _slot, bool on)
 	assert(_slot == 1 || _slot == 2);
 
 	uint8_t data[] = {
-		NITRO_CMD_SLOT_POWER, 0x00, 0x00, 0x00,
+		NITRO_CMD_MULTI_AD, 0x00, 0x00, 0x00,
 		0 /* device */, 0x00, 0x00, 0x00,
 		on,   0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00,
@@ -252,16 +276,16 @@ int ISNitro::setSlotPower(uint8_t _slot, bool on)
 	int ret = 0;
 	if (_slot == 1) {
 		data[4] = 0x0A;	// slot 1
-		ret = sendWriteCommand(NITRO_CMD_SLOT_POWER, 0, 0, data, sizeof(data));
+		ret = sendWriteCommand(NITRO_CMD_MULTI_AD, 0, 0, data, sizeof(data));
 	} else /*if (_slot == 2)*/ {
 		data[4] = 0x02;	// slot 2 (primary?)
-		ret = sendWriteCommand(NITRO_CMD_SLOT_POWER, 0, 0, data, sizeof(data));
+		ret = sendWriteCommand(NITRO_CMD_MULTI_AD, 0, 0, data, sizeof(data));
 		if (ret < 0)
 			return ret;
 		if (on) {
 			data[4] = 0x04;	// slot 2 (secondary?)
 			data[8] = 0;
-			ret = sendWriteCommand(NITRO_CMD_SLOT_POWER, 0, 0, data, sizeof(data));
+			ret = sendWriteCommand(NITRO_CMD_MULTI_AD, 0, 0, data, sizeof(data));
 		}
 	}
 
@@ -434,14 +458,14 @@ int ISNitro::readNECMemory(uint32_t address, uint8_t *data, uint32_t len)
 		const uint32_t cdblen = sizeof(NitroNECCommand);
 		unique_ptr<uint8_t[]> cdb(new uint8_t[cdblen]);
 		NitroNECCommand *const pNecCmd = reinterpret_cast<NitroNECCommand*>(cdb.get());
-		pNecCmd->cmd = 0x27;
+		pNecCmd->cmd = NITRO_CMD_NEC_MEMORY_WRITE_READ_POS_NOINC;
 		pNecCmd->unitSize = 2;
 		pNecCmd->length = cpu_to_le16(inner_len / 2);
 		pNecCmd->address = cpu_to_le32(address + (i * READ_NEC_LIMIT));
-		int ret = sendWriteCommand(0x27, 0, 0, cdb.get(), cdblen);
+		int ret = sendWriteCommand(NITRO_CMD_NEC_MEMORY_WRITE_READ_POS_NOINC, 0, 0, cdb.get(), cdblen);
 		if(ret)
 			return ret;
-		ret = sendReadCommand(0x17, 0, 0, data + (i * READ_NEC_LIMIT), inner_len);
+		ret = sendReadCommand(NITRO_CMD_NEC_MEMORY_READ, 0, 0, data + (i * READ_NEC_LIMIT), inner_len);
 		if(ret)
 			return ret;
 	}
@@ -464,12 +488,12 @@ int ISNitro::writeNECMemory(uint32_t address, const uint8_t *data, uint32_t len)
 	const uint32_t cdblen = len + sizeof(NitroNECCommand);
 	unique_ptr<uint8_t[]> cdb(new uint8_t[cdblen]);
 	NitroNECCommand *const pNecCmd = reinterpret_cast<NitroNECCommand*>(cdb.get());
-	pNecCmd->cmd = NITRO_CMD_NEC_MEMORY;
+	pNecCmd->cmd = NITRO_CMD_NEC_MEMORY_WRITE_NOINC;
 	pNecCmd->unitSize = 2;
 	pNecCmd->length = cpu_to_le16(len / 2);
 	pNecCmd->address = cpu_to_le32(address);
 	memcpy(&cdb[sizeof(NitroNECCommand)], data, len);
-	return sendWriteCommand(NITRO_CMD_NEC_MEMORY, 0, 0, cdb.get(), cdblen);
+	return sendWriteCommand(NITRO_CMD_NEC_MEMORY_WRITE_NOINC, 0, 0, cdb.get(), cdblen);
 }
 
 /**
