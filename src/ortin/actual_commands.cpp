@@ -13,7 +13,7 @@
 
 #define BUFFER_SIZE_FULLRESET 0x8000
 
-#define BUFFER_SIZE_DUMP_ISNE_FW 0xE0000
+#define BUFFER_SIZE_DUMP_ISNE_FW 0x400000
 
 #define BUFFER_SIZE_DUMP_DS_IPL_FW 0x40000
 
@@ -38,14 +38,18 @@ int do_reset_cmd(ISNitro* connected_isne) {
 
 int do_dump_isne_fw_out_cmd(ISNitro* connected_isne, std::string out_filepath) {
 	uint8_t* buffer = new uint8_t[BUFFER_SIZE_DUMP_ISNE_FW];
-	int ret = connected_isne->readNECMemory(0x210000, buffer, BUFFER_SIZE_DUMP_ISNE_FW);
-	if(ret)
+
+	int ret = connected_isne->readNECMemory(0, buffer, BUFFER_SIZE_DUMP_ISNE_FW);
+	if(ret) {
 		fprintf(stderr, "Read failure");
-	else {
-		std::ofstream fs(out_filepath, std::ios::out | std::ios::binary);
-		fs.write((const char*)buffer, BUFFER_SIZE_DUMP_ISNE_FW);
-		fs.close();
+		delete buffer;
+		return ret;
 	}
+
+	std::ofstream fs(out_filepath, std::ios::out | std::ios::binary);
+	fs.write((const char*)buffer, BUFFER_SIZE_DUMP_ISNE_FW);
+	fs.close();
+
 	delete buffer;
 	return ret;
 }
