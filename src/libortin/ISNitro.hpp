@@ -115,6 +115,20 @@ class ISNitro
 		int writeEmulationMemory(uint8_t _slot, uint32_t address, const uint8_t *data, uint32_t len);
 
 		/**
+		 * Read from Slot-1 EMULATOR memory.
+		 *
+		 * NOTE: Caller should call this function in chunks itself for
+		 * better UI interactivity.
+		 *
+		 * @param _slot Emulated slot number. (1 for DS, 2 for GBA)
+		 * @param address Destination address.
+		 * @param data Data.
+		 * @param len Length of data.
+		 * @return 0 on success; libusb error code on error.
+		 */
+		int readEmulationMemory(uint8_t _slot, uint32_t address, uint8_t *data, uint32_t len);
+
+		/**
 		 * Install the debugger ROM.
 		 * This is required in order to load an NDS game successfully.
 		 *
@@ -178,6 +192,15 @@ class ISNitro
 		 */
 		int setAVModeSettings(const NitroAVModeSettings_t *mode);
 
+		/**
+		 * Locks (to on) or unlocks the state of the debug button.
+		 * When the state is locked, pressing the debug button on the controller
+		 * does nothing.
+		 * @param on Lock state.
+		 * @return 0 on success; libusb error code on error.
+		 */
+		int updateDebugButtonState(bool on);
+ 
 		/**
 		 * Insert a breakpoint into a CPU to pause it.
 		 * CPU must be in BREAK in order to read from its memory space.

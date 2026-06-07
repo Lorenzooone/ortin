@@ -313,6 +313,25 @@ int ISNitro::writeEmulationMemory(uint8_t _slot, uint32_t address, const uint8_t
 }
 
 /**
+ * Write to Slot-1 EMULATOR memory.
+ *
+ * NOTE: Caller should call this function in chunks itself for
+ * better UI interactivity.
+ *
+ * @param _slot Emulated slot number. (1 for DS, 2 for GBA)
+ * @param address Destination address.
+ * @param data Data.
+ * @param len Length of data.
+ * @return 0 on success; libusb error code on error.
+ */
+int ISNitro::readEmulationMemory(uint8_t _slot, uint32_t address, uint8_t *data, uint32_t len) {
+	// NOTE: Must be a multiple of two bytes.
+	assert(_slot == 1 || _slot == 2);
+	assert(len % 2 == 0);
+	return sendReadCommand(NITRO_CMD_EMULATOR_MEMORY, _slot, address, data, len);
+}
+
+/**
  * Install the debugger ROM.
  * This is required in order to load an NDS game successfully.
  *
@@ -648,6 +667,25 @@ int ISNitro::setAVModeSettings(const NitroAVModeSettings_t *mode)
 	if (ret < 0)
 		return ret;
 	return writeNECMemory(NITRO_NEC_REG_CURSOR_POS_Y, cmd_cursorPos, sizeof(cmd_cursorPos));
+}
+
+/**
+ * Locks (to on) or unlocks the state of the debug button.
+ * When the state is locked, pressing the debug button on the controller
+ * does nothing.
+ * @param on Lock state.
+ * @return 0 on success; libusb error code on error.
+ */
+int ISNitro::updateDebugButtonState(bool on) {
+	static uint8_t buffer[0x2];
+	int ret = readNECMemory(0x08000000, buffer, 2);
+	if(ret)
+		return ret;
+	if(on)
+		buffer[0] |= 1;
+	else
+		buffer[0] &= ~1;
+	return writeNECMemory(0x08000000, buffer, 2);
 }
 
 /**

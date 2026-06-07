@@ -114,15 +114,15 @@ static const loadable_cli_command_t dump_isne_fw_cmd = {
 
 static const loadable_cli_command_t dump_ds_ipl_fw_cmd = {
 	.command = "dump_ds_ipl_fw",
-	.command_syntax = "dump_ds_ipl_fw [out_filename]",
-	.full_description =	"  Dumps the firmware of the DS IPL to \"out_filename\".\n"
-						"  Default is fw_ds_ipl_dump_\'#SERIAL\'.bin.\n"
+	.command_syntax = "dump_ds_ipl_fw [out_filepath_preamble]",
+	.full_description =	"  Dumps the firmware of the DS IPL, BIOS7 and BIOS9\n"
+						"  to \"out_filepath_preamble\"fw_ds_ipl.bin,\n"
+						"  \"out_filepath_preamble\"bios9.bin and \"out_filepath_preamble\"bios7.bin\n"
+						"  Default is dump_\'#SERIAL\'_\n"
 						"  To be used together with dsbf_dump, by selecting \"To Emulated GBA ROM\".\n"
-						"  Download: https://github.com/Lorenzooone/dsbf_dump/releases/tag/0.0.0\n"
-						"  Example:\n"
-						"    bin/ortin load dsbf_dump.nds\n"
-						"    (Select on the ISNE side \"To Emulated GBA ROM\")\n"
-						"    bin/ortin dump_ds_ipl_fw",
+						"  The .nds file should be located in either the current directory, or the\n"
+						"  directory of the program.\n"
+						"  Download: https://github.com/Lorenzooone/dsbf_dump/releases/tag/1.0.isne\n",
 	.requires_isne_connected = true,
 	.num_required_params = 0,
 	.fn = do_dump_ds_ipl_fw_cmd,
@@ -202,11 +202,23 @@ const loadable_cli_command_t* get_cli_command_t_for_command(int argc, TCHAR *arg
 // Separate parsing and logic...
 
 static std::string tolower_str(std::string str) {
-    // Converting the std::string to lower case
-    for_each(str.begin(), str.end(), [](char& c) {
-        c = _totlower(c);
-    });
-    return str;
+	// Converting the std::string to lower case
+	for_each(str.begin(), str.end(), [](char& c) {
+		c = _totlower(c);
+	});
+	return str;
+}
+
+static bool is_file_accessible (const std::string& name) {
+	std::ifstream f(name.c_str());
+	return f.good();
+}
+
+static std::string get_dir_of(const std::string& fname) {
+	size_t pos = fname.find_last_of("\\/");
+	return (std::string::npos == pos)
+		? ""
+		: fname.substr(0, pos);
 }
 
 void ATTR_PRINTF(2, 3) print_error(const TCHAR *argv0, const TCHAR *fmt, ...)
@@ -351,19 +363,29 @@ static int do_dump_isne_fw_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[])
 }
 
 static int do_dump_ds_ipl_fw_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]) {
-	std::string out_filepath;
+	std::string out_filepath_preamble;
+	std::string base_dsbf_dump_filepath = "dsbf_dump.nds";
+	std::string dsbf_dump_filepath = base_dsbf_dump_filepath;
+
+	if(!is_file_accessible(dsbf_dump_filepath)) {
+		dsbf_dump_filepath = get_dir_of(std::string(argv[0])) + "/" + base_dsbf_dump_filepath;
+		if(!is_file_accessible(dsbf_dump_filepath)) {
+			print_error(argv[0], _T("could not find %s or %s"), base_dsbf_dump_filepath.c_str(), dsbf_dump_filepath.c_str());
+			return EXIT_FAILURE;
+		}
+	}
 
 	if(argc >= (CLI_CMD_BASE_POS + 2))
-		out_filepath = std::string(argv[CLI_CMD_BASE_POS + 1]);
+		out_filepath_preamble = std::string(argv[CLI_CMD_BASE_POS + 1]);
 	else {
 		std::string serial_str = "";
 		int ret = connected_isne->getSerial(&serial_str);
 		if(ret < 0)
 			return ret;
-		out_filepath = "fw_ds_ipl_dump_" + serial_str + ".bin";
+		out_filepath_preamble = "dump_" + serial_str + "_";
 	}
 
-	return do_dump_ds_ipl_fw_out_cmd(connected_isne, out_filepath);
+	return do_dump_ds_ipl_fw_out_cmd(connected_isne, out_filepath_preamble, dsbf_dump_filepath);
 }
 
 static int do_print_help_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]) {

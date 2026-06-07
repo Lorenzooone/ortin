@@ -75,7 +75,7 @@ int ORTIN_CDECL _tmain(int argc, TCHAR *argv[])
 	}
 
 	ISNitro *nitro = new ISNitro();
-	if (!nitro->isOpen()) {
+	if ((!nitro) || (!nitro->isOpen())) {
 		fprintf(stderr, "*** ERROR: Unable to open the IS-NITRO unit.\n");
 		libusb_exit(nullptr);
 		return EXIT_FAILURE;
