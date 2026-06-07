@@ -332,6 +332,26 @@ int ISNitro::readEmulationMemory(uint8_t _slot, uint32_t address, uint8_t *data,
 }
 
 /**
+ * Returns the debugger ROM's size.
+ *
+ * @return The size of the debugger ROM.
+ */
+size_t ISNitro::getDebuggerROMSize(void) {
+	return sizeof(debugger_code);
+}
+
+/**
+ * Stores the data of the region of memory that will be overwritten by the
+ * debugger ROM.
+ *
+ * @param out_buf buffer the data is stored on.
+ * @return 0 on success; libusb error code on error.
+ */
+int ISNitro::getPreDebuggerROMInstallData(uint8_t* out_buf) {
+	return readEmulationMemory(1, 0xFF80000, out_buf, sizeof(debugger_code));
+}
+
+/**
  * Install the debugger ROM.
  * This is required in order to load an NDS game successfully.
  *
@@ -454,6 +474,26 @@ int ISNitro::waitForDebuggerROM(void)
 	// Debugger ROM failed to initialize...
 	return LIBUSB_ERROR_TIMEOUT;
 }
+
+/**
+ * Restores the region of memory overwritten by the
+ * debugger ROM.
+ *
+ * @param stored_buf buffer the data was stored on.
+ * @param toFirmware If true, boot to NDS firmware instead of the game.
+ * @return 0 on success; libusb error code on error.
+ */
+int ISNitro::RemoveDebuggerROMInstallData(uint8_t* stored_buf, bool toFirmware) {
+	// Overwrite the debugging pointers in the ROM header.
+	if (!toFirmware) {
+		const uint32_t debug_ptrs[4] = { 0, 0, 0, 0 };
+		int ret = writeEmulationMemory(1, 0x160, (const uint8_t*)debug_ptrs, sizeof(debug_ptrs));
+		if(ret < 0)
+			return ret;
+	}
+	return writeEmulationMemory(1, 0xFF80000, stored_buf, sizeof(debugger_code));
+}
+
 
 #define READ_NEC_LIMIT 0x2000
 /**

@@ -129,6 +129,22 @@ class ISNitro
 		int readEmulationMemory(uint8_t _slot, uint32_t address, uint8_t *data, uint32_t len);
 
 		/**
+		 * Returns the debugger ROM's size.
+		 *
+		 * @return The size of the debugger ROM.
+		 */
+		size_t getDebuggerROMSize(void);
+
+		/**
+		 * Stores the data of the region of memory that will be overwritten by the
+		 * debugger ROM.
+		 *
+		 * @param out_buf buffer the data is stored on.
+		 * @return 0 on success; libusb error code on error.
+		 */
+		int getPreDebuggerROMInstallData(uint8_t* out_buf);
+
+		/**
 		 * Install the debugger ROM.
 		 * This is required in order to load an NDS game successfully.
 		 *
@@ -143,6 +159,16 @@ class ISNitro
 		 * @return 0 on success; libusb error code on error.
 		 */
 		int waitForDebuggerROM(void);
+
+		/**
+		 * Restores the region of memory overwritten by the
+		 * debugger ROM. Restores the header as well.
+		 *
+		 * @param stored_buf buffer the data was stored on.
+		 * @param toFirmware If true, boot to NDS firmware instead of the game.
+		 * @return 0 on success; libusb error code on error.
+		 */
+		int RemoveDebuggerROMInstallData(uint8_t* stored_buf, bool toFirmware = false);
 
 		/**
 		 * Read the NEC CPU's memory.

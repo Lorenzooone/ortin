@@ -88,6 +88,10 @@ int load_nds_rom(ISNitro *nitro, const TCHAR *filename)
 		address += curlen;
 	}
 
+	// Store the data that will be overwritten
+	uint8_t* previous_data = new uint8_t[nitro->getDebuggerROMSize()];
+	nitro->getPreDebuggerROMInstallData(previous_data);
+
 	// Install the debugger ROM.
 	nitro->installDebuggerROM();
 
@@ -98,16 +102,26 @@ int load_nds_rom(ISNitro *nitro, const TCHAR *filename)
 
 	// Wait for the debugger ROM to initialize.
 	int ret = nitro->waitForDebuggerROM();
-	if (ret < 0)
+	if (ret < 0) {
+		delete previous_data;
 		return ret;
+	}
 
 	// LibISNitroEmulator sends cmd174 to both CPUs here.
 	ret = nitro->sendCpuCMD174(NITRO_CPU_ARM9);
-	if (ret < 0)
+	if (ret < 0) {
+		delete previous_data;
 		return ret;
+	}
 	ret = nitro->sendCpuCMD174(NITRO_CPU_ARM7);
-	if (ret < 0)
+	if (ret < 0) {
+		delete previous_data;
 		return ret;
+	}
+
+	// Restore the data that was overwritten
+	nitro->RemoveDebuggerROMInstallData(previous_data);
+	delete previous_data;
 
 	// Start the ARM9 and ARM7 CPUs.
 	// (Official debugger ROM requires this; NitroDriver's ROM does not.)
