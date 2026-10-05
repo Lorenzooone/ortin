@@ -39,6 +39,7 @@ static int do_enc_nds_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_set_av_mode_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_slot_on_off_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_slot1_emu_on_off_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
+static int do_load_cart_slot1_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_dump_isne_fw_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_dump_ds_ipl_fw_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_print_help_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
@@ -158,6 +159,19 @@ static const loadable_cli_command_t slot_on_off_cmd = {
 	.fn = do_slot_on_off_cli_cmd,
 };
 
+static const loadable_cli_command_t load_cartridge_slot_1_cmd = {
+	.command = "launchcartslot1",
+	.command_syntax = "launchcartslot1 [slot1launch path]",
+	.full_description =	"  Lauches the cartridge present in slot 1 (DS) by using slot1launch.\n"
+						"  Default slot1launch path is \"./slot1launch.dsi\".\n"
+						"  A different one may be specified if needed.\n"
+						"  The slot1launch usef by default is the one also available at:\n"
+						"  https://github.com/Lorenzooone/Simple-DS-Slot-1-Launcher/releases",
+	.requires_isne_connected = true,
+	.num_required_params = 0,
+	.fn = do_load_cart_slot1_cli_cmd,
+};
+
 static const loadable_cli_command_t help_cmd = {
 	.command = "help",
 	.command_syntax = "help",
@@ -178,6 +192,7 @@ static const loadable_cli_command_t* all_cli_cmds[] = {
 	&dump_ds_ipl_fw_cmd,
 	&slot_on_off_cmd,
 	&slot1_emu_on_off_cmd,
+	&load_cartridge_slot_1_cmd,
 	&help_cmd,
 };
 
@@ -242,6 +257,17 @@ static std::string get_dir_of(const std::string& fname) {
 	return (std::string::npos == pos)
 		? ""
 		: fname.substr(0, pos);
+}
+
+static std::string get_accessible_path_of(const std::string& base_filepath, const TCHAR *argv0) {
+	std::string file_filepath = base_filepath;
+
+	if(!is_file_accessible(file_filepath)) {
+		file_filepath = get_dir_of(std::string(argv0)) + "/" + base_filepath;
+		if(!is_file_accessible(file_filepath))
+			return "";
+	}
+	return file_filepath;
 }
 
 void ATTR_PRINTF(2, 3) print_error(const TCHAR *argv0, const TCHAR *fmt, ...)
@@ -386,6 +412,33 @@ static int do_slot1_emu_on_off_cli_cmd(ISNitro* connected_isne, int argc, TCHAR 
 	return connected_isne->changeSlot1Emulation(command_on);
 }
 
+static int do_load_cart_slot1_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]) {
+	const std::string base_slot1launch_filepath = "slot1launch.dsi";
+	const std::string base_slot1launch_filepath_alt = "slot1launch.nds";
+	std::string slot1launch_filepath = "";
+
+	if(argc >= (CLI_CMD_BASE_POS + 2)) {
+		slot1launch_filepath = std::string(argv[CLI_CMD_BASE_POS + 1]);
+		if(!is_file_accessible(slot1launch_filepath)) {
+			print_error(argv[0], _T("could not find %s"), slot1launch_filepath.c_str());
+			return EXIT_FAILURE;
+		}
+	}
+	else {
+		slot1launch_filepath = get_accessible_path_of(base_slot1launch_filepath, argv[0]);
+		std::string slot1launch_filepath_alt = get_accessible_path_of(base_slot1launch_filepath_alt, argv[0]);
+		if(slot1launch_filepath == "") {
+			if(slot1launch_filepath_alt == "") {
+				print_error(argv[0], _T("could not find %s or %s"), base_slot1launch_filepath.c_str(), base_slot1launch_filepath_alt.c_str());
+				return EXIT_FAILURE;
+			}
+			slot1launch_filepath = slot1launch_filepath_alt;
+		}
+	}
+
+	return do_launch_cart_slot1_cmd(connected_isne, slot1launch_filepath);
+}
+
 static int do_dump_isne_fw_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]) {
 	std::string out_filepath;
 
@@ -404,15 +457,12 @@ static int do_dump_isne_fw_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[])
 
 static int do_dump_ds_ipl_fw_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]) {
 	std::string out_filepath_preamble;
-	std::string base_dsbf_dump_filepath = "dsbf_dump.nds";
-	std::string dsbf_dump_filepath = base_dsbf_dump_filepath;
+	const std::string base_dsbf_dump_filepath = "dsbf_dump.nds";
+	std::string dsbf_dump_filepath = get_accessible_path_of(base_dsbf_dump_filepath, argv[0]);
 
-	if(!is_file_accessible(dsbf_dump_filepath)) {
-		dsbf_dump_filepath = get_dir_of(std::string(argv[0])) + "/" + base_dsbf_dump_filepath;
-		if(!is_file_accessible(dsbf_dump_filepath)) {
-			print_error(argv[0], _T("could not find %s or %s"), base_dsbf_dump_filepath.c_str(), dsbf_dump_filepath.c_str());
-			return EXIT_FAILURE;
-		}
+	if(dsbf_dump_filepath == "") {
+		print_error(argv[0], _T("could not find %s"), base_dsbf_dump_filepath.c_str());
+		return EXIT_FAILURE;
 	}
 
 	if(argc >= (CLI_CMD_BASE_POS + 2))

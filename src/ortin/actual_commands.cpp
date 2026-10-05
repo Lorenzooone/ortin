@@ -234,3 +234,17 @@ int do_dump_ds_ipl_fw_out_cmd(ISNitro* connected_isne, std::string out_filepath,
 	delete buffer;
 	return ret;
 }
+
+int do_launch_cart_slot1_cmd(ISNitro* connected_isne, std::string slot1launch_filepath) {
+	int ret = connected_isne->updateDebugButtonState(true);
+	if(ret)
+		return ret;
+	// Load ROM
+	ret = load_nds_rom(connected_isne, slot1launch_filepath.c_str());
+	if(ret)
+		return ret;
+	ret = connected_isne->changeSlot1Emulation(false);
+	if(ret)
+		return ret;
+	return connected_isne->updateDebugButtonState(false);
+}
