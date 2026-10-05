@@ -17,3 +17,6 @@ git_version.h
 src/libortin/bins/debugger_code.h
 lib/
 melonDS
+*.zip
+install_manifest.txt
+_CPack_Packages/

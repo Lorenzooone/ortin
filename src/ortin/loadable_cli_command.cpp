@@ -165,7 +165,7 @@ static const loadable_cli_command_t load_cartridge_slot_1_cmd = {
 	.full_description =	"  Lauches the cartridge present in slot 1 (DS) by using slot1launch.\n"
 						"  Default slot1launch path is \"./slot1launch.dsi\".\n"
 						"  A different one may be specified if needed.\n"
-						"  The slot1launch usef by default is the one also available at:\n"
+						"  The slot1launch used by default is the one also available at:\n"
 						"  https://github.com/Lorenzooone/Simple-DS-Slot-1-Launcher/releases",
 	.requires_isne_connected = true,
 	.num_required_params = 0,

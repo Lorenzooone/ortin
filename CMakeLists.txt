@@ -119,6 +119,18 @@ CONFIGURE_FILE(
 ADD_CUSTOM_TARGET(uninstall
 	"${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake")
 
+### Files to be copied to the output ###
+
+SET(DSBF_ROM_PATH "dsbf_dump.nds")
+SET(SLOT1LAUNCH_ROM_PATH "slot1launch.dsi")
+
+configure_file(${DSBF_ROM_PATH} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} COPYONLY)
+configure_file(${SLOT1LAUNCH_ROM_PATH} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} COPYONLY)
+
+# Add to CPack
+install(FILES ${CMAKE_SOURCE_DIR}/${DSBF_ROM_PATH} DESTINATION "./bin")
+install(FILES ${CMAKE_SOURCE_DIR}/${SLOT1LAUNCH_ROM_PATH} DESTINATION "./bin")
+
 ### Subdirectories. ###
 
 # Project subdirectories.
