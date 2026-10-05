@@ -9,6 +9,8 @@
 
 #include <fstream>
 
+#include "libortin/utils.hpp"
+
 #include "actual_commands.hpp"
 #include "load-rom.hpp"
 
@@ -17,22 +19,6 @@
 #define BUFFER_SIZE_DUMP_ISNE_FW 0x400000
 
 #define ASDRAM_SIZE 0x40000
-
-static void write_le32(uint8_t* data, uint32_t value) {
-	data[0] = value & 0xFF;
-	data[1] = (value >> 8) & 0xFF;
-	data[2] = (value >> 16) & 0xFF;
-	data[3] = (value >> 24) & 0xFF;
-}
-
-static uint32_t read_le32(uint8_t* data) {
-	uint32_t out = 0;
-	out |= data[0];
-	out |= data[1] << 8;
-	out |= data[2] << 16;
-	out |= data[3] << 24;
-	return out;
-}
 
 static uint32_t calc_checksum_of_buffer(uint8_t* data, size_t size) {
 	uint32_t out = 0;

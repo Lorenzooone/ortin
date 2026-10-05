@@ -24,7 +24,7 @@
  * @param filename ROM image filename.
  * @return 0 on success; non-zero on error.
  */
-int load_nds_rom(ISNitro *nitro, const TCHAR *filename)
+int load_nds_rom(ISNitro *nitro, const TCHAR *filename, bool do_resets, uint32_t wanted_chip_id)
 {
 	errno = 0;
 	FILE *f = _tfopen(filename, "rb");
@@ -49,8 +49,12 @@ int load_nds_rom(ISNitro *nitro, const TCHAR *filename)
 	uint8_t *const buf1mb = static_cast<uint8_t*>(malloc(BUF_SIZE));
 
 	// Reset the IS-NITRO while loading a ROM image.
-	nitro->fullReset();
-	nitro->ndsReset(true);
+	if(do_resets) {
+		nitro->fullReset();
+		nitro->ndsReset(true);
+	}
+	else
+		nitro->ejectSlot(true);
 	nitro->setSlotPower(1, false);
 
 	// Load 1 MB at a time.
@@ -75,6 +79,16 @@ int load_nds_rom(ISNitro *nitro, const TCHAR *filename)
 		if (firstMB) {
 			// We may need to encrypt the secure area.
 			ndscrypt_encrypt_secure_area(buf1mb, curlen);
+
+			// Add extra identifier to guarantee in emulation memory...
+			// This is similar to what the official software does for ISTDs (but with "TWLD" instead)
+			uintptr_t emu_identifier_pos = 0x3F60;
+			buf1mb[emu_identifier_pos + 0] = 'N';
+			buf1mb[emu_identifier_pos + 1] = 'T';
+			buf1mb[emu_identifier_pos + 2] = 'R';
+			buf1mb[emu_identifier_pos + 3] = 'D';
+			buf1mb[emu_identifier_pos + 4] = 0x17;
+
 			firstMB = false;
 		}
 
@@ -86,6 +100,13 @@ int load_nds_rom(ISNitro *nitro, const TCHAR *filename)
 		// Write to the emulation memory.
 		nitro->writeEmulationMemory(1, address, buf1mb, curlen);
 		address += curlen;
+	}
+
+    nitro->setEmulatedChipID(wanted_chip_id);
+
+	if(!do_resets) {
+		nitro->setSlotPower(1, true);
+		return 0;
 	}
 
 	// Store the data that will be overwritten

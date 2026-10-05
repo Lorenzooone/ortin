@@ -34,6 +34,7 @@
 static int do_fullreset_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_reset_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_load_nds_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
+static int do_no_reset_load_nds_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_enc_nds_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_set_av_mode_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_slot_on_off_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
@@ -68,6 +69,16 @@ static const loadable_cli_command_t load_nds_cmd = {
 	.requires_isne_connected = true,
 	.num_required_params = 1,
 	.fn = do_load_nds_cli_cmd,
+};
+
+static const loadable_cli_command_t noreset_load_nds_cmd = {
+	.command = "noreset_load",
+	.command_syntax = "noreset_load filename.nds",
+	.full_description =	"  Load a Nintendo DS ROM image. If the image has a decrypted secure area,\n"
+						"  it will be re-encrypted on load. The device is not reset.",
+	.requires_isne_connected = true,
+	.num_required_params = 1,
+	.fn = do_no_reset_load_nds_cli_cmd,
 };
 
 static const loadable_cli_command_t enc_nds_cmd = {
@@ -150,6 +161,7 @@ static const loadable_cli_command_t* all_cli_cmds[] = {
 	&fullreset_cmd,
 	&reset_cmd,
 	&load_nds_cmd,
+	&noreset_load_nds_cmd,
 	&enc_nds_cmd,
 	&avmode_cmd,
 	&dump_isne_fw_cmd,
@@ -246,6 +258,10 @@ static int do_reset_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]) {
 
 static int do_load_nds_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]) {
 	return load_nds_rom(connected_isne, argv[CLI_CMD_BASE_POS + 1]);
+}
+
+static int do_no_reset_load_nds_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]) {
+	return load_nds_rom(connected_isne, argv[CLI_CMD_BASE_POS + 1], false);
 }
 
 static int do_enc_nds_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]) {

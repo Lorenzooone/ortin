@@ -19,7 +19,7 @@ class ISNitro;
  * @param filename ROM image filename.
  * @return 0 on success; non-zero on error.
  */
-int load_nds_rom(ISNitro *nitro, const TCHAR *filename);
+int load_nds_rom(ISNitro *nitro, const TCHAR *filename, bool do_resets = true, uint32_t wanted_chip_id = 0x000000C2);
 int enc_nds_rom(const TCHAR *filename, const TCHAR *out_filename);
 
 #endif /* __ORTIN_ORTIN_LOAD_ROM_HPP__ */

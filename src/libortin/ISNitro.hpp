@@ -101,6 +101,14 @@ class ISNitro
 		int setSlotPower(uint8_t _slot, bool on);
 
 		/**
+		 * Set emulated chip ID.
+		 * @param _wanted_chip_id; Wanted Chip ID.
+		 *                         Note that different chips are read differently by the firmware.
+		 * @return 0 on success;   libusb error code on error.
+		 */
+		int setEmulatedChipID(uint32_t _wanted_chip_id);
+
+		/**
 		 * Write to Slot-1 EMULATOR memory.
 		 *
 		 * NOTE: Caller should call this function in chunks itself for
@@ -189,6 +197,14 @@ class ISNitro
 		 * @return 0 on success; libusb error code on error.
 		 */
 		int writeNECMemory(uint32_t address, const uint8_t *data, uint32_t len);
+
+		/**
+		 * Ejects/Inserts cartridge in the selected slot.
+		 *
+		 * @param slot1 Select the slot. (true for DS, false for GBA)
+		 * @return 0 on success; libusb error code on error.
+		 */
+		int ejectSlot(bool slot1);
 
 		/**
 		 * Unlock the AV functionality.

@@ -23,6 +23,7 @@
 using std::unique_ptr;
 
 #include "byteswap.h"
+#include "utils.hpp"
 
 // Debug ROM
 #include "bins/debugger_code.h"
@@ -293,6 +294,27 @@ int ISNitro::setSlotPower(uint8_t _slot, bool on)
 }
 
 /**
+ * Set emulated chip ID.
+ * @param _wanted_chip_id; Wanted Chip ID.
+ *                         Note that different chips are read differently by the firmware.
+ * @return 0 on success;   libusb error code on error.
+ */
+int ISNitro::setEmulatedChipID(uint32_t _wanted_chip_id)
+{
+	uint8_t data[] = {
+		NITRO_CMD_MULTI_AD, 0x00, 0x00, 0x00,
+		0x09, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00
+	};
+    write_le32(data + 8, _wanted_chip_id);
+
+	return sendWriteCommand(NITRO_CMD_MULTI_AD, 0, 0, data, sizeof(data));
+}
+
+/**
  * Write to Slot-1 EMULATOR memory.
  *
  * NOTE: Caller should call this function in chunks itself for
@@ -329,6 +351,27 @@ int ISNitro::readEmulationMemory(uint8_t _slot, uint32_t address, uint8_t *data,
 	assert(_slot == 1 || _slot == 2);
 	assert(len % 2 == 0);
 	return sendReadCommand(NITRO_CMD_EMULATOR_MEMORY, _slot, address, data, len);
+}
+
+/**
+ * Ejects/Inserts cartridge in the selected slot.
+ *
+ * @param slot1 Select the slot. (true for DS, false for GBA)
+ * @return 0 on success; libusb error code on error.
+ */
+int ISNitro::ejectSlot(bool slot1) {
+	uint8_t cmd1[] = {0x01, 0x01};
+	uint8_t cmd2[] = {0x00, 0x00};
+	uint32_t address = 0xFC40032;
+	if(!slot1) {
+		cmd1[0] = 4;
+		cmd1[1] = 0;
+		address = 0xF841008;
+	}
+	int ret = writeNECMemory(address, cmd1, sizeof(cmd1));
+	if(ret < 0)
+		return ret;
+	return writeNECMemory(address, cmd2, sizeof(cmd2));
 }
 
 /**

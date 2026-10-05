@@ -12,12 +12,14 @@ PROJECT(libortin LANGUAGES CXX)
 SET(libortin_SRCS
 	ISNitro.cpp
 	ndscrypt.cpp
+	utils.cpp
 	crc.c
 	)
 # Headers.
 SET(libortin_H
 	ISNitro.hpp
 	ndscrypt.hpp
+	utils.hpp
 	crc.h
 	byteorder.h
 	byteswap.h
