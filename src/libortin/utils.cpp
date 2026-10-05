@@ -9,10 +9,10 @@ void _ort_write_le32(uint8_t* data, uint32_t value) {
 
 uint32_t _ort_read_le32(uint8_t* data) {
 	uint32_t out = 0;
-	out |= data[0];
-	out |= data[1] << 8;
-	out |= data[2] << 16;
-	out |= data[3] << 24;
+	out |= ((uint32_t)data[0]) << 0;
+	out |= ((uint32_t)data[1]) << 8;
+	out |= ((uint32_t)data[2]) << 16;
+	out |= ((uint32_t)data[3]) << 24;
 	return out;
 }
 
@@ -29,14 +29,14 @@ void _ort_write_le64(uint8_t* data, uint64_t value) {
 
 uint64_t _ort_read_le64(uint8_t* data) {
 	uint64_t out = 0;
-	out |= data[0];
-	out |= data[1] << 8;
-	out |= data[2] << 16;
-	out |= data[3] << 24;
-	out |= data[4] << 32;
-	out |= data[5] << 40;
-	out |= data[6] << 48;
-	out |= data[7] << 56;
+	out |= ((uint64_t)data[0]) << 0;
+	out |= ((uint64_t)data[1]) << 8;
+	out |= ((uint64_t)data[2]) << 16;
+	out |= ((uint64_t)data[3]) << 24;
+	out |= ((uint64_t)data[4]) << 32;
+	out |= ((uint64_t)data[5]) << 40;
+	out |= ((uint64_t)data[6]) << 48;
+	out |= ((uint64_t)data[7]) << 56;
 	return out;
 }
 
@@ -47,7 +47,7 @@ void _ort_write_le16(uint8_t* data, uint16_t value) {
 
 uint16_t _ort_read_le16(uint8_t* data) {
 	uint16_t out = 0;
-	out |= data[0];
-	out |= data[1] << 8;
+	out |= ((uint16_t)data[0]) << 0;
+	out |= ((uint16_t)data[1]) << 8;
 	return out;
 }

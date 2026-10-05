@@ -154,6 +154,10 @@ typedef enum {
 	NITRO_NEC_REG_MONITOR_DATA_HI		= 0x08000036,
 } NitroNECVideoRegister_e;
 
+typedef enum {
+	NITRO_NEC_REG_CARD_SLOT1_EMU = 0x0FC40042,
+} NitroNECLCA2Reg_e;
+
 /**
  * NEC NDS register 0 bits.
  */

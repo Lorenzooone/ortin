@@ -207,6 +207,12 @@ class ISNitro
 		int ejectSlot(bool slot1);
 
 		/**
+		 * Enables/Disables slot 1 cartridge emulation.
+		 * @return 0 on success; libusb error code on error.
+		 */
+		int changeSlot1Emulation(bool enable);
+
+		/**
 		 * Unlock the AV functionality.
 		 * @return 0 on success; libusb error code on error.
 		 */

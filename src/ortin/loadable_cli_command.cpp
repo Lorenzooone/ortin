@@ -38,6 +38,7 @@ static int do_no_reset_load_nds_cli_cmd(ISNitro* connected_isne, int argc, TCHAR
 static int do_enc_nds_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_set_av_mode_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_slot_on_off_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
+static int do_slot1_emu_on_off_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_dump_isne_fw_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_dump_ds_ipl_fw_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_print_help_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
@@ -139,6 +140,15 @@ static const loadable_cli_command_t dump_ds_ipl_fw_cmd = {
 	.fn = do_dump_ds_ipl_fw_cmd,
 };
 
+static const loadable_cli_command_t slot1_emu_on_off_cmd = {
+	.command = "slot1emu",
+	.command_syntax = "slot1emu on/off",
+	.full_description =	"  Turns on or off slot 1 (DS) emulation.",
+	.requires_isne_connected = true,
+	.num_required_params = 1,
+	.fn = do_slot1_emu_on_off_cli_cmd,
+};
+
 static const loadable_cli_command_t slot_on_off_cmd = {
 	.command = "slot",
 	.command_syntax = "slot on/off 1/2",
@@ -167,6 +177,7 @@ static const loadable_cli_command_t* all_cli_cmds[] = {
 	&dump_isne_fw_cmd,
 	&dump_ds_ipl_fw_cmd,
 	&slot_on_off_cmd,
+	&slot1_emu_on_off_cmd,
 	&help_cmd,
 };
 
@@ -360,6 +371,19 @@ static int do_slot_on_off_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv
 	}
 
 	return connected_isne->setSlotPower(_slot, command_on);
+}
+
+static int do_slot1_emu_on_off_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]) {
+	bool command_on = false;
+
+	std::string command_str = tolower_str(std::string(argv[CLI_CMD_BASE_POS + 1]));
+	if(command_str != "on" && command_str != "off") {
+		print_error(argv[0], _T("Command '%s' is not valid"), argv[CLI_CMD_BASE_POS + 1]);
+		return EXIT_FAILURE;
+	}
+	command_on = command_str == "on";
+
+	return connected_isne->changeSlot1Emulation(command_on);
 }
 
 static int do_dump_isne_fw_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]) {

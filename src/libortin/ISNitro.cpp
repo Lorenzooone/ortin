@@ -375,6 +375,18 @@ int ISNitro::ejectSlot(bool slot1) {
 }
 
 /**
+ * Enables/Disables slot 1 cartridge emulation.
+ * @return 0 on success; libusb error code on error.
+ */
+int ISNitro::changeSlot1Emulation(bool enable)
+{
+	uint8_t cmd2[] = {0x01, 0x00};
+	if(!enable)
+		cmd2[0] = 0;
+	return writeNECMemory(NITRO_NEC_REG_CARD_SLOT1_EMU, cmd2, sizeof(cmd2));
+}
+
+/**
  * Returns the debugger ROM's size.
  *
  * @return The size of the debugger ROM.
