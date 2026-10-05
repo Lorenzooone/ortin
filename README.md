@@ -18,26 +18,39 @@ by @Dirbaio.
   supported. (Decrypted ROM images are re-encrypted on the fly.)
 * Boot Game Boy Advance cartridges by enabling Slot 2 and resetting the
   system.
+* Dump ISNE firmware as well as DS Firmware and BIOSes.
+* Launch cartridges inserted in Slot-1.
 
 ## TODO
 
 * Dumping Slot-1 and Slot-2 cartridges on the PC side.
-* Dumping system firmware and BIOSes.
 * Graphical interface with fancy ROM loader.
 * Implement more of IS-NITRO-DEBUGGER's functionality.
 
 ## Notes
 
-* IS-NITRO-EMULATOR systems cannot boot from Slot-1 cards directly; instead,
-  a ROM image must be loaded onto the EMULATOR board, which usually has 256 MB
-  RAM. This makes it impossible to load 512 MB games. Currently, there's no
-  known method to detect the amount of installed RAM, so 512 MB games might
-  look like they loaded, but they will likely crash once they try accessing
-  data past the 256 MB limit.
+* IS-NITRO-EMULATOR systems cannot boot from Slot-1 cards directly, at least
+  not without modifying the DS firmware;
+  instead they can boot cartridges inserted in Slot-1 by using slot1launch
+  and switching off Slot-1 emulation.
+  This can be used to launch retail cartridges while still having
+  the debug monitor active for development and debugging.
+  Link to the included slot1launch:
+  https://github.com/Lorenzooone/Simple-DS-Slot-1-Launcher/releases
+* When emulating Slot-1, a ROM image must be loaded onto the EMULATOR board,
+  which usually has 256 MB RAM. This makes it impossible to load 512 MB games.
+  While it is possible to install more RAM and to edit an ISNE's configuration
+  to accept the extra RAM (up to 1 GB), currently there is no known way to
+  have the cartridge emulator access the extra RAM, despite it being
+  accessible from the PC side. So even with more than 256 MBs of RAM installed,
+  512 MB games might look like they loaded, but they will likely crash once
+  they try accessing data past the 256 MB limit (they can still be used
+  without issue by loading them from cartridges using slot1launch).
 * IS-NITRO-EMULATOR does *not* emulate Slot-1 save memory. Most games will
   show an error message if the save memory is not present. To work around
   this, you will need to insert a Slot-1 card with a matching save memory chip
   before loading the ROM image.
+* The RAM of the ISNE must be: SODIMM SDRAM 144 pin PC133 133 MHz.
 
 ## References
 

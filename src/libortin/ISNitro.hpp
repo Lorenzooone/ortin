@@ -77,6 +77,21 @@ class ISNitro
 		int getSerial(std::string* out_str);
 
 		/**
+		 * Reads the capabilities of the unit to the provided out.
+		 * @return 0 on success; libusb error code on error.
+		 */
+		int getDeviceCapabilities(uint16_t* out);
+
+		/**
+		 * Reads the RAM installed on the unit.
+		 * WARNING: Not all of it may be usable by the cartridge emulator...
+		 * Maybe there is a register that's not being set...
+		 * (By the official software as well...)
+		 * @return 0 on success; libusb error code on error.
+		 */
+		int getDeviceInstalledRAM(uint32_t* out);
+
+		/**
 		 * Reset the entire IS-NITRO system.
 		 * @return 0 on success; libusb error code on error.
 		 */
@@ -102,9 +117,9 @@ class ISNitro
 
 		/**
 		 * Set emulated chip ID.
-		 * @param _wanted_chip_id; Wanted Chip ID.
-		 *                         Note that different chips are read differently by the firmware.
-		 * @return 0 on success;   libusb error code on error.
+		 * @param _wanted_chip_id;	Wanted Chip ID.
+		 *							Note that different chips are read differently by the firmware.
+		 * @return 0 on success;	libusb error code on error.
 		 */
 		int setEmulatedChipID(uint32_t _wanted_chip_id);
 

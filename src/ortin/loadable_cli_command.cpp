@@ -42,6 +42,7 @@ static int do_slot1_emu_on_off_cli_cmd(ISNitro* connected_isne, int argc, TCHAR 
 static int do_load_cart_slot1_cli_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_dump_isne_fw_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_dump_ds_ipl_fw_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
+static int do_print_unitinfo_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 static int do_print_help_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]);
 
 static const loadable_cli_command_t fullreset_cmd = {
@@ -135,7 +136,8 @@ static const loadable_cli_command_t dump_ds_ipl_fw_cmd = {
 						"  To be used together with dsbf_dump, by selecting \"To Emulated GBA ROM\".\n"
 						"  The .nds file should be located in either the current directory, or the\n"
 						"  directory of the program.\n"
-						"  Download: https://github.com/Lorenzooone/dsbf_dump/releases/tag/1.0.isne\n",
+						"  The dsbf_dump used by default is the one also available at:\n"
+						"  https://github.com/Lorenzooone/dsbf_dump/releases/tag/1.0.isne",
 	.requires_isne_connected = true,
 	.num_required_params = 0,
 	.fn = do_dump_ds_ipl_fw_cmd,
@@ -161,15 +163,24 @@ static const loadable_cli_command_t slot_on_off_cmd = {
 
 static const loadable_cli_command_t load_cartridge_slot_1_cmd = {
 	.command = "launchcartslot1",
-	.command_syntax = "launchcartslot1 [slot1launch path]",
+	.command_syntax = "launchcartslot1 [slot1launch_path]",
 	.full_description =	"  Lauches the cartridge present in slot 1 (DS) by using slot1launch.\n"
-						"  Default slot1launch path is \"./slot1launch.dsi\".\n"
+						"  Default slot1launch_path is \"./slot1launch.dsi\".\n"
 						"  A different one may be specified if needed.\n"
 						"  The slot1launch used by default is the one also available at:\n"
 						"  https://github.com/Lorenzooone/Simple-DS-Slot-1-Launcher/releases",
 	.requires_isne_connected = true,
 	.num_required_params = 0,
 	.fn = do_load_cart_slot1_cli_cmd,
+};
+
+static const loadable_cli_command_t print_basic_info_cmd = {
+	.command = "unitinfo",
+	.command_syntax = "unitinfo",
+	.full_description =	"  Display basic information about the connected unit.",
+	.requires_isne_connected = true,
+	.num_required_params = 0,
+	.fn = do_print_unitinfo_cmd,
 };
 
 static const loadable_cli_command_t help_cmd = {
@@ -193,6 +204,7 @@ static const loadable_cli_command_t* all_cli_cmds[] = {
 	&slot_on_off_cmd,
 	&slot1_emu_on_off_cmd,
 	&load_cartridge_slot_1_cmd,
+	&print_basic_info_cmd,
 	&help_cmd,
 };
 
@@ -476,6 +488,27 @@ static int do_dump_ds_ipl_fw_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[
 	}
 
 	return do_dump_ds_ipl_fw_out_cmd(connected_isne, out_filepath_preamble, dsbf_dump_filepath);
+}
+
+static int do_print_unitinfo_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]) {
+	std::string serial = "";
+	uint32_t ram_size = 0;
+	uint16_t fw_info = 0;
+
+	int ret = connected_isne->getSerial(&serial);
+	if (ret < 0)
+		return ret;
+	fprintf(stdout, "Serial: %s\n", serial.c_str());
+	ret = connected_isne->getDeviceInstalledRAM(&ram_size);
+	if (ret < 0)
+		return ret;
+	fprintf(stdout, "Installed RAM: %u MB\n", ram_size / (1024 * 1024));
+	ret = connected_isne->getDeviceCapabilities(&fw_info);
+	if (ret < 0)
+		return ret;
+	fprintf(stdout, "Capabilities: %04X\n", fw_info);
+
+	return ret;
 }
 
 static int do_print_help_cmd(ISNitro* connected_isne, int argc, TCHAR *argv[]) {

@@ -226,6 +226,36 @@ int ISNitro::getSerial(std::string* out_str)
 }
 
 /**
+ * Reads the capabilities of the unit to the provided out.
+ * @return 0 on success; libusb error code on error.
+ */
+int ISNitro::getDeviceCapabilities(uint16_t* out) {
+	static uint8_t buffer[0x2];
+	int ret = readNECMemory(0x007FE080, buffer, 2);
+	if(ret)
+		return ret;
+	*out = read_le16(buffer);
+	return ret;
+}
+
+/**
+ * Reads the RAM installed on the unit.
+ * WARNING: Not all of it may be usable by the cartridge emulator...
+ * Maybe there is a register that's not being set...
+ * (By the official software as well...)
+ * @return 0 on success; libusb error code on error.
+ */
+int ISNitro::getDeviceInstalledRAM(uint32_t* out) {
+	static uint8_t buffer[0x28];
+
+	int ret = sendReadCommand(NITRO_CMD_GET_HARDWARE_INFORMATION, 0, 0, buffer, sizeof(buffer));
+	if(ret)
+		return ret;
+	*out = read_le32(buffer + 4);
+	return ret;
+}
+
+/**
  * Reset the entire IS-NITRO system.
  * @return 0 on success; libusb error code on error.
  */
@@ -295,9 +325,9 @@ int ISNitro::setSlotPower(uint8_t _slot, bool on)
 
 /**
  * Set emulated chip ID.
- * @param _wanted_chip_id; Wanted Chip ID.
- *                         Note that different chips are read differently by the firmware.
- * @return 0 on success;   libusb error code on error.
+ * @param _wanted_chip_id;	Wanted Chip ID.
+ *							Note that different chips are read differently by the firmware.
+ * @return 0 on success;	libusb error code on error.
  */
 int ISNitro::setEmulatedChipID(uint32_t _wanted_chip_id)
 {
@@ -309,7 +339,7 @@ int ISNitro::setEmulatedChipID(uint32_t _wanted_chip_id)
 		0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00
 	};
-    write_le32(data + 8, _wanted_chip_id);
+	write_le32(data + 8, _wanted_chip_id);
 
 	return sendWriteCommand(NITRO_CMD_MULTI_AD, 0, 0, data, sizeof(data));
 }
