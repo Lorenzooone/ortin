@@ -51,6 +51,10 @@ by @Dirbaio.
   this, you will need to insert a Slot-1 card with a matching save memory chip
   before loading the ROM image.
 * The RAM of the ISNE must be: SODIMM SDRAM 144 pin PC133 133 MHz.
+* IS-NITRO-EMULATOR systems do not forward certain cartridge operations to the
+  cartridge slot. This means that most Slot-1 flashcarts will not work.
+  Not only that, but games using NAND saves (like WarioWare Do It Yourself)
+  will not save properly.
 
 ## References
 
